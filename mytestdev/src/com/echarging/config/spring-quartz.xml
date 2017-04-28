@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:lang="http://www.springframework.org/schema/lang"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:oxm="http://www.springframework.org/schema/oxm"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd
+		http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-4.0.xsd
+		http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.0.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/oxm http://www.springframework.org/schema/oxm/spring-oxm-4.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+		
+		<bean id="jobFactory" class="com.echarging.web.timer.JobFactory"></bean>
+		<!-- 总管理类 如果将lazy-init='false'那么容器启动就会执行调度程序  -->
+	    <bean id="startQuertz" lazy-init="true" autowire="no" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+	        <property name="triggers">
+	            <list>
+	                <ref bean="doGameRatio"/>
+	                <ref bean="doChargeGateway"/>
+	                <ref bean="doPushGameServer"/>
+	            </list>
+	        </property>
+	        <property name="jobFactory">
+	        	<ref bean="jobFactory"/>
+	        </property>
+        </bean>
+        <!--begin quartz调度配置 -->
+        <!-- 游戏充值比例 -->
+        <bean id="doGameRatio" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+			<property name="jobDetail">
+				<ref bean="JobGameRatio" />
+			</property>
+			<property name="cronExpression">
+				<value>0/50 * * * * ?</value>
+			</property>
+	    </bean>
+	    <!-- 获取所有网关列表 -->
+	    <bean id="doChargeGateway" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+			<property name="jobDetail">
+				<ref bean="JobChargeGateway" />
+			</property>
+			<property name="cronExpression">
+				<value>0/50 * * * * ?</value>
+			</property>
+	    </bean>
+	    <!-- 充值推送到游戏服务器 -->
+	    <bean id="doPushGameServer" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+			<property name="jobDetail">
+				<ref bean="JobPushGameServer" />
+			</property>
+			<property name="cronExpression">
+				<value>0/50 * * * * ?</value>
+			</property>
+	    </bean>
+        <!--end qurtz 调度任务 -->
+        
+        <!-- begin job工作 -->
+        <!-- 游戏充值比例 -->
+        <bean id="JobGameRatio" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+			<property name="targetObject">
+				<ref bean="gameRatio" />
+			</property>
+			<property name="targetMethod">
+				<value>start</value>
+			</property>
+	    </bean>
+	    <!-- 获取所有网关列表定时任务 -->
+	    <bean id="JobChargeGateway" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+			<property name="targetObject">
+				<ref bean="chargeGateway" />
+			</property>
+			<property name="targetMethod">
+				<value>start</value>
+			</property>
+	    </bean>
+	    <!-- 执行推送到游戏服务器的定时任务 -->
+		<bean id="JobPushGameServer" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+			<property name="targetObject">
+				<ref bean="pushGameServer" />
+			</property>
+			<property name="targetMethod">
+				<value>start</value>
+			</property>
+	    </bean>
+        <!-- end   job工作 -->
+        
+        <!-- begin 工作job Class -->
+        
+        <!-- 游戏充值比例 -->
+        <bean id="gameRatio" class="com.echarging.web.timer.ChargeGameRatioJob"></bean>
+        <!-- 获取所有网关列表定时任务 -->
+        <bean id="chargeGateway" class="com.echarging.web.timer.ChargeGatewayJob"></bean>
+        <!-- 执行推送到游戏服务器的定时任务 -->
+	    <bean id="pushGameServer" class="com.echarging.web.timer.PushGameServerJob"></bean>
+	    
+        <!-- end   工作job-->
+</beans>
